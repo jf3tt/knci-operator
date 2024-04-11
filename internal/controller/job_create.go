@@ -4,29 +4,42 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
 
 func CreatePod(repoUrl string, repoAccessToken string) {
 
-	var kubeconfig string
-	if home, err := os.UserHomeDir(); err == nil {
-		kubeconfig = filepath.Join(home, ".kube", "config")
+	// var kubeconfig string
+	var config *rest.Config
+	var err error
+
+	if home := homedir.HomeDir(); home != "" && filepath.Join(home, ".kube", "config") != "" {
+		kubeconfig := filepath.Join(home, ".kube", "config")
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			panic(err.Error())
+		}
+	} else {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 	gitCloneCommand := "git clone " + repoUrl + " /shared && tree"
 
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		panic(err.Error())
-	}
+	// config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
 
 	// Создайте клиент Kubernetes используя конфигурацию
 	clientset, err := kubernetes.NewForConfig(config)
