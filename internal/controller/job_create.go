@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	civ1 "knci/api/v1"
 	"log"
 	"math/rand"
 	"path/filepath"
@@ -29,7 +30,7 @@ func GenerateRandomString(length int) string {
 	return string(b)
 }
 
-func CreatePod(repoName string, repoUrl string, repoAccessToken string) {
+func CreatePod(ci civ1.CI) {
 
 	// var kubeconfig string
 	var config *rest.Config
@@ -52,12 +53,8 @@ func CreatePod(repoName string, repoUrl string, repoAccessToken string) {
 		}
 	}
 
-	gitCloneCommand := "git clone " + repoUrl + " /repo && tree"
-
-	// config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
+	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
+	fmt.Println("Commands: ", ci.Spec.Repo.Jobs[1].Commands[0])
 
 	// Создайте клиент Kubernetes используя конфигурацию
 	clientset, err := kubernetes.NewForConfig(config)
@@ -67,9 +64,38 @@ func CreatePod(repoName string, repoUrl string, repoAccessToken string) {
 	jobs := clientset.BatchV1().Jobs("knci-system")
 	// Создание спецификации пода
 	jobId := GenerateRandomString(5)
+	for i := 0; i < len(ci.Spec.Repo.Jobs); i++ {
+		fmt.Println(ci.Spec.Repo.Jobs[i].Image)
+	}
+
+	var containers []v1.Container
+	for _, job := range ci.Spec.Repo.Jobs {
+		container := v1.Container{
+			Name:    job.Name,
+			Image:   job.Image,
+			Command: job.Commands,
+			// SecurityContext: &v1.SecurityContext{
+			// 	Privileged: boolPtr(true),
+			// },
+			VolumeMounts: []v1.VolumeMount{
+				{
+					Name:      "git-repo",
+					MountPath: "/repo",
+				},
+			},
+		}
+		containers = append(containers, container)
+	}
+
+	fmt.Println("CONTAINERS: ", containers)
+
+	// func boolPtr(b bool) *bool {
+	// 	return &b
+	// }
+
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      repoName + "-job-" + jobId,
+			Name:      ci.ObjectMeta.Name + "-job-" + jobId,
 			Namespace: "knci-system",
 		},
 		Spec: batchv1.JobSpec{
@@ -96,19 +122,7 @@ func CreatePod(repoName string, repoUrl string, repoAccessToken string) {
 							},
 						},
 					},
-					Containers: []v1.Container{
-						{
-							Name:    "job",
-							Image:   "alpine:latest",
-							Command: []string{"sh", "-c", "tree /repo"},
-							VolumeMounts: []v1.VolumeMount{
-								{
-									Name:      "git-repo",
-									MountPath: "/repo",
-								},
-							},
-						},
-					},
+					Containers:    containers,
 					RestartPolicy: v1.RestartPolicyNever,
 				},
 			},
@@ -122,5 +136,5 @@ func CreatePod(repoName string, repoUrl string, repoAccessToken string) {
 	}
 	fmt.Printf("Pod created: %s\n", buildJob.Name)
 
-	// return "dsds"
+	// return buildJob.Name
 }

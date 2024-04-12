@@ -35,7 +35,7 @@ type CISpec struct {
 
 type RepoSpec struct {
 	URL            string    `json:"url"`
-	AccessToken    string    `json:"accessToken"`
+	AccessToken    string    `json:"accessToken,omitempty"`
 	ScrapeInterval int       `json:"scrapeInterval"`
 	Jobs           []JobSpec `json:"jobs"`
 }

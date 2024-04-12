@@ -1,0 +1,19 @@
+kind: CI
+apiVersion: ci.knci/v1
+metadata:
+  name: ci-sample-0
+spec:
+  repo: 
+    url: "https://github.com/bank-vaults/vault-operator.git"
+    scrapeInterval: 1
+    jobs:
+      - name: build-job
+        stage: build
+        image: ubuntu:latest
+        commands:
+        - env
+      - name: golang
+        image: golang:1.21
+        stage: build
+        commands:
+        - ["ls", "/"]

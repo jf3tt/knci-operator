@@ -69,7 +69,6 @@ spec:
                   url:
                     type: string
                 required:
-                - accessToken
                 - jobs
                 - scrapeInterval
                 - url
