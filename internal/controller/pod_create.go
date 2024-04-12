@@ -37,6 +37,8 @@ func GenerateRandomString(length int) string {
 	return string(b)
 }
 
+// +kubebuilder:rbac:groups=core,resources=pods,verbs=create;list;watch
+
 func CreatePod(ci civ1.CI) {
 
 	var config *rest.Config
@@ -44,7 +46,6 @@ func CreatePod(ci civ1.CI) {
 
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig := filepath.Join(home, ".kube", "config")
-		// Проверяем, существует ли файл
 		if _, err := os.Stat(kubeconfig); err == nil {
 			config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 			fmt.Println("fetched local config")
@@ -53,7 +54,6 @@ func CreatePod(ci civ1.CI) {
 				panic(err.Error())
 			}
 		} else {
-			// Если файла нет, пытаемся загрузить in-cluster конфигурацию
 			config, err = rest.InClusterConfig()
 			fmt.Println("fetched k8s config")
 			if err != nil {
@@ -62,7 +62,6 @@ func CreatePod(ci civ1.CI) {
 			}
 		}
 	} else {
-		// Если домашняя директория не определена, также пытаемся загрузить in-cluster конфигурацию
 		config, err = rest.InClusterConfig()
 		fmt.Println("fetched k8s config")
 		if err != nil {
@@ -84,7 +83,7 @@ func CreatePod(ci civ1.CI) {
 		fmt.Println(ci.Spec.Repo.Jobs[i].Image)
 	}
 
-	var containers []v1.Container
+	var containers []v1.Container //nolint:prealloc
 	for _, pod := range ci.Spec.Repo.Jobs {
 		container := v1.Container{
 			Name:    pod.Name,
@@ -106,8 +105,6 @@ func CreatePod(ci civ1.CI) {
 		}
 		containers = append(containers, container)
 	}
-
-	// fmt.Println("CONTAINERS: ", containers)
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
