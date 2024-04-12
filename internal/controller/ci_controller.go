@@ -50,7 +50,6 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	_ = log.FromContext(ctx)
 
 	log := log.FromContext(ctx)
-	fmt.Println("ctx: ")
 
 	var ci civ1.CI
 

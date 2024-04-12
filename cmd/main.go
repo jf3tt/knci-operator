@@ -59,12 +59,13 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 
-	var kubeconfig *string
+	// var kubeconfig *string
 	// if home := os.Getenv("HOME"); home != "" {
 	// 	kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	// } else {
 	// 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	// }
+	fmt.Println("ENV:", os.Getenv("ENV"))
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -79,7 +80,6 @@ func main() {
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
-	fmt.Println(kubeconfig)
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled

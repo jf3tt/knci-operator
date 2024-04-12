@@ -5,6 +5,7 @@ import (
 	"fmt"
 	civ1 "knci/api/v1"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -41,15 +42,27 @@ func CreatePod(ci civ1.CI) {
 	var config *rest.Config
 	var err error
 
-	if home := homedir.HomeDir(); home != "" && filepath.Join(home, ".kube", "config") != "" {
+	if home := homedir.HomeDir(); home != "" {
 		kubeconfig := filepath.Join(home, ".kube", "config")
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-		fmt.Println("fetched local config")
-		if err != nil {
-			fmt.Println("error: fetched local config")
-			panic(err.Error())
+		// Проверяем, существует ли файл
+		if _, err := os.Stat(kubeconfig); err == nil {
+			config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+			fmt.Println("fetched local config")
+			if err != nil {
+				fmt.Println("error: fetched local config")
+				panic(err.Error())
+			}
+		} else {
+			// Если файла нет, пытаемся загрузить in-cluster конфигурацию
+			config, err = rest.InClusterConfig()
+			fmt.Println("fetched k8s config")
+			if err != nil {
+				fmt.Println("error: fetched k8s config")
+				panic(err.Error())
+			}
 		}
 	} else {
+		// Если домашняя директория не определена, также пытаемся загрузить in-cluster конфигурацию
 		config, err = rest.InClusterConfig()
 		fmt.Println("fetched k8s config")
 		if err != nil {
@@ -94,7 +107,7 @@ func CreatePod(ci civ1.CI) {
 		containers = append(containers, container)
 	}
 
-	fmt.Println("CONTAINERS: ", containers)
+	// fmt.Println("CONTAINERS: ", containers)
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
