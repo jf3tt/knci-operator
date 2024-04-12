@@ -50,17 +50,15 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	_ = log.FromContext(ctx)
 
 	log := log.FromContext(ctx)
+	fmt.Println("ctx: ")
 
-	// Создаем экземпляр CI
 	var ci civ1.CI
 
-	// Запрашиваем объект из кластера
 	if err := r.Get(ctx, req.NamespacedName, &ci); err != nil {
 		log.Error(err, "unable to fetch CI")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Теперь ci содержит данные из вашего YAML файла
 	fmt.Println("CI name: ", ci.ObjectMeta.Name)
 	fmt.Println("Repo URL: ", ci.Spec.Repo.URL)
 	fmt.Println("Repo Access Token: ", ci.Spec.Repo.AccessToken)
