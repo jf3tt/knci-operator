@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"path/filepath"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -15,7 +17,19 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-func CreatePod(repoUrl string, repoAccessToken string) {
+func GenerateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+func CreatePod(repoName string, repoUrl string, repoAccessToken string) {
 
 	// var kubeconfig string
 	var config *rest.Config
@@ -24,12 +38,16 @@ func CreatePod(repoUrl string, repoAccessToken string) {
 	if home := homedir.HomeDir(); home != "" && filepath.Join(home, ".kube", "config") != "" {
 		kubeconfig := filepath.Join(home, ".kube", "config")
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		fmt.Println("fetched local config")
 		if err != nil {
+			fmt.Println("error: fetched local config")
 			panic(err.Error())
 		}
 	} else {
 		config, err = rest.InClusterConfig()
+		fmt.Println("fetched k8s config")
 		if err != nil {
+			fmt.Println("error: fetched k8s config")
 			panic(err.Error())
 		}
 	}
@@ -48,9 +66,10 @@ func CreatePod(repoUrl string, repoAccessToken string) {
 	}
 	jobs := clientset.BatchV1().Jobs("knci-system")
 	// Создание спецификации пода
+	jobId := GenerateRandomString(5)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "job",
+			Name:      repoName + "-job-" + jobId,
 			Namespace: "knci-system",
 		},
 		Spec: batchv1.JobSpec{
@@ -97,12 +116,11 @@ func CreatePod(repoUrl string, repoAccessToken string) {
 	}
 
 	// Создание пода
-	job1, err := jobs.Create(context.TODO(), job, metav1.CreateOptions{})
+	buildJob, err := jobs.Create(context.TODO(), job, metav1.CreateOptions{})
 	if err != nil {
 		log.Fatalln("Failed to create K8s job.")
 	}
+	fmt.Printf("Pod created: %s\n", buildJob.Name)
 
-	fmt.Printf("Pod created: %s\n", job.ObjectMeta.Name)
-	fmt.Println(job1)
 	// return "dsds"
 }

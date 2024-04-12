@@ -53,6 +53,7 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 
 	// Создаем экземпляр CI
 	var ci civ1.CI
+	var repoName string
 	var repoUrl string
 	var repoAccessToken string
 
@@ -68,9 +69,11 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	fmt.Println("Repo Access Token: ", ci.Spec.Repo.AccessToken)
 	fmt.Println("Scrape Interval: ", ci.Spec.Repo.ScrapeInterval)
 
+	repoName = ci.ObjectMeta.Name
 	repoUrl = ci.Spec.Repo.URL
 	repoAccessToken = ci.Spec.Repo.AccessToken
-	CreatePod(repoUrl, repoAccessToken)
+
+	CreatePod(repoName, repoUrl, repoAccessToken)
 
 	return ctrl.Result{}, nil
 }
