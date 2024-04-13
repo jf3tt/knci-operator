@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func boolPtr(b bool) *bool {
@@ -36,14 +37,16 @@ func GenerateRandomString(length int) string {
 
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=create;list;watch
 
-func CreatePod(ci civ1.CI) {
+func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
+	log := log.FromContext(ctx)
+	log.Info("Detected CI Job")
 
 	var config *rest.Config
 	var err error
 
 	config, err = kauth.GetKubeConfig()
 	if err != nil {
-		fmt.Println("Ошибка получения конфигурации Kubernetes:", err)
+		fmt.Println("Error getting kubernetes configuration:", err)
 	}
 
 	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
@@ -83,8 +86,9 @@ func CreatePod(ci civ1.CI) {
 		}
 		containers = append(containers, container)
 	}
+	var pods v1.Pod
 
-	pod := &v1.Pod{
+	podTemplate := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ci.ObjectMeta.Name + "-job-" + podId,
 			Namespace: "knci-system",
@@ -128,9 +132,10 @@ func CreatePod(ci civ1.CI) {
 		},
 	}
 
-	_, err = clientset.CoreV1().Pods("knci-system").Create(context.Background(), pod, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().Pods("knci-system").Create(context.Background(), podTemplate, metav1.CreateOptions{})
 	if err != nil {
 		panic(err)
 	}
-
+	log.Info("Creating Completed")
+	return pods
 }
