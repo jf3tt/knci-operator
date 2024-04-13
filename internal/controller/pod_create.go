@@ -34,7 +34,7 @@ func GenerateRandomString(length int) string {
 	return string(b)
 }
 
-// +kubebuilder:rbac:groups=core,resources=pods,verbs=create;list;watch
+// +kubebuilder:rbac:groups=core,resources=pods,verbs=create;list;watch;delete
 
 func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
 	log := log.FromContext(ctx)
