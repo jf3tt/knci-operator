@@ -65,18 +65,20 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	err := r.Get(ctx, req.NamespacedName, &ci)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("CI resource not found. Ignoring since object must be deleted", "name", req.NamespacedName.Name, "namespace", req.NamespacedName.Namespace)
+			// log.Info("CI resource not found. Ignoring since object must be deleted", "name", req.NamespacedName.Name, "namespace", req.NamespacedName.Namespace)
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "unable to fetch CI")
 		return ctrl.Result{}, err
 	}
 
+	// checking for cleaning
 	if !ci.ObjectMeta.DeletionTimestamp.IsZero() {
 		log.Info("Deleting CI", "CI Name", ci.ObjectMeta.Name)
 
 		podList := &v1.PodList{}
 
+		// get a list of pods by labels
 		listOpts := []client.ListOption{
 			client.InNamespace("knci-system"),
 			client.MatchingLabels(map[string]string{
@@ -88,21 +90,26 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 			return ctrl.Result{}, nil
 		}
 
+		// deleting pods produced by ci crd
 		for _, pod := range podList.Items {
 			if err := r.Delete(ctx, &pod); err != nil {
 				log.Info("Deleting error")
 			}
 		}
 
+		// deleting finalizers from ci crd
 		ci.ObjectMeta.Finalizers = removeString(ci.ObjectMeta.Finalizers, "ci.knci.io/finalizer")
 		if err := r.Update(ctx, &ci); err != nil {
 			return ctrl.Result{}, err
 		}
+		log.Info("Deleting completed", "CI Name", ci.ObjectMeta.Name)
 
 	} else {
-		log.Info("Processing CI", "CI Name", ci.ObjectMeta.Name, "Repo URL", ci.Spec.Repo.URL, "Scrape Interval", ci.Spec.Repo.ScrapeInterval)
 
+		// creating pods
+		log.Info("Detected CI Job")
 		CreatePod(ci)
+		log.Info("Creating Completed")
 	}
 
 	return ctrl.Result{}, nil

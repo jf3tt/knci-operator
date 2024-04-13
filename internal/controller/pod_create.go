@@ -48,14 +48,12 @@ func CreatePod(ci civ1.CI) {
 		kubeconfig := filepath.Join(home, ".kube", "config")
 		if _, err := os.Stat(kubeconfig); err == nil {
 			config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-			fmt.Println("fetched local config")
 			if err != nil {
 				fmt.Println("error: fetched local config")
 				panic(err.Error())
 			}
 		} else {
 			config, err = rest.InClusterConfig()
-			fmt.Println("fetched k8s config")
 			if err != nil {
 				fmt.Println("error: fetched k8s config")
 				panic(err.Error())
