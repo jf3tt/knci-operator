@@ -4,17 +4,14 @@ import (
 	"context"
 	"fmt"
 	civ1 "knci/api/v1"
+	kauth "knci/internal/utils"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 func boolPtr(b bool) *bool {
@@ -44,28 +41,9 @@ func CreatePod(ci civ1.CI) {
 	var config *rest.Config
 	var err error
 
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig := filepath.Join(home, ".kube", "config")
-		if _, err := os.Stat(kubeconfig); err == nil {
-			config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-			if err != nil {
-				fmt.Println("error: fetched local config")
-				panic(err.Error())
-			}
-		} else {
-			config, err = rest.InClusterConfig()
-			if err != nil {
-				fmt.Println("error: fetched k8s config")
-				panic(err.Error())
-			}
-		}
-	} else {
-		config, err = rest.InClusterConfig()
-		fmt.Println("fetched k8s config")
-		if err != nil {
-			fmt.Println("error: fetched k8s config")
-			panic(err.Error())
-		}
+	config, err = kauth.GetKubeConfig()
+	if err != nil {
+		fmt.Println("Ошибка получения конфигурации Kubernetes:", err)
 	}
 
 	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
@@ -90,11 +68,17 @@ func CreatePod(ci civ1.CI) {
 				},
 				{
 					Name:      "docker-sock",
-					MountPath: "/var/run/docker.sock",
+					MountPath: "/run/k3s/containerd/containerd.sock",
 				},
 			},
 			SecurityContext: &v1.SecurityContext{
 				Privileged: boolPtr(true),
+			},
+			Env: []v1.EnvVar{
+				{
+					Name:  "DOCKER_HOST",
+					Value: "unix://var/run/docker.sock",
+				},
 			},
 		}
 		containers = append(containers, container)
