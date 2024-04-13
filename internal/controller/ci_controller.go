@@ -48,16 +48,6 @@ type CIReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
 
-func removeString(slice []string, s string) []string {
-	newSlice := []string{}
-	for _, item := range slice {
-		if item != s {
-			newSlice = append(newSlice, item)
-		}
-	}
-	return newSlice
-}
-
 func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
@@ -65,7 +55,6 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	err := r.Get(ctx, req.NamespacedName, &ci)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// log.Info("CI resource not found. Ignoring since object must be deleted", "name", req.NamespacedName.Name, "namespace", req.NamespacedName.Namespace)
 			return ctrl.Result{}, nil
 		}
 		log.Error(err, "unable to fetch CI")
@@ -74,42 +63,20 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 
 	// checking for cleaning
 	if !ci.ObjectMeta.DeletionTimestamp.IsZero() {
-		log.Info("Deleting CI", "CI Name", ci.ObjectMeta.Name)
+		CheckForDeleting(ci, ctx, r)
+		return ctrl.Result{}, err
+	}
 
-		podList := &v1.PodList{}
+	// creating pods
+	log.Info("Detected CI Job")
+	CreatePod(ci)
+	log.Info("Creating Completed")
 
-		// get a list of pods by labels
-		listOpts := []client.ListOption{
-			client.InNamespace("knci-system"),
-			client.MatchingLabels(map[string]string{
-				"ci.knci.io/name": ci.ObjectMeta.Name,
-			}),
-		}
+	// watching completed pods
+	var pod v1.Pod
 
-		if err := r.List(ctx, podList, listOpts...); err != nil {
-			return ctrl.Result{}, nil
-		}
-
-		// deleting pods produced by ci crd
-		for _, pod := range podList.Items {
-			if err := r.Delete(ctx, &pod); err != nil {
-				log.Info("Deleting error")
-			}
-		}
-
-		// deleting finalizers from ci crd
-		ci.ObjectMeta.Finalizers = removeString(ci.ObjectMeta.Finalizers, "ci.knci.io/finalizer")
-		if err := r.Update(ctx, &ci); err != nil {
-			return ctrl.Result{}, err
-		}
-		log.Info("Deleting completed", "CI Name", ci.ObjectMeta.Name)
-
-	} else {
-
-		// creating pods
-		log.Info("Detected CI Job")
-		CreatePod(ci)
-		log.Info("Creating Completed")
+	if pod.Status.Phase == v1.PodSucceeded {
+		log.Info("Completed Pod", pod)
 	}
 
 	return ctrl.Result{}, nil
