@@ -108,26 +108,6 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	return ctrl.Result{}, nil
 }
 
-// deleteAssociatedPods удаляет все поды, связанные с данной CI
-func (r *CIReconciler) deleteAssociatedPods(ctx context.Context, ci *civ1.CI) error {
-	podList := &v1.PodList{}
-	listOpts := []client.ListOption{
-		client.InNamespace("knci-system"),
-		client.MatchingLabels(map[string]string{"app": "knci"}),
-	}
-	if err := r.List(ctx, podList, listOpts...); err != nil {
-		return err
-	}
-
-	for _, pod := range podList.Items {
-		if err := r.Delete(ctx, &pod); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // SetupWithManager sets up the controller with the Manager.
 func (r *CIReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
