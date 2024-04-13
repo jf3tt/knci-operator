@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	civ1 "knci/api/v1"
 	kauth "knci/internal/utils"
 	"math/rand"
@@ -46,7 +45,7 @@ func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
 
 	config, err = kauth.GetKubeConfig()
 	if err != nil {
-		fmt.Println("Error getting kubernetes configuration:", err)
+		log.Info("Error getting kubernetes configuration:", err)
 	}
 
 	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
