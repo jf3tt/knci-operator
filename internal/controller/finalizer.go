@@ -33,7 +33,9 @@ func CheckForDeleting(ci civ1.CI, ctx context.Context, r *CIReconciler) {
 	}
 
 	if err := r.List(ctx, podList, listOpts...); err != nil {
-
+		if err != nil {
+			log.Error(err, "unable to get pod list")
+		}
 	}
 
 	// deleting pods produced by ci crd
@@ -50,4 +52,5 @@ func CheckForDeleting(ci civ1.CI, ctx context.Context, r *CIReconciler) {
 		log.Info("ERROR: UPDATE")
 	}
 	log.Info("Deleting completed", "CI Name", ci.ObjectMeta.Name)
+
 }
