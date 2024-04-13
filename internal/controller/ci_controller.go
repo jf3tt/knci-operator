@@ -69,7 +69,7 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 
 	// creating pods
 	log.Info("Detected CI Job")
-	CreatePod(ci)
+	CreatePod(ci, ctx)
 	log.Info("Creating Completed")
 
 	// watching completed pods
