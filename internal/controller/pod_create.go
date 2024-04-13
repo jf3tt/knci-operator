@@ -71,7 +71,6 @@ func CreatePod(ci civ1.CI) {
 	}
 
 	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
-	fmt.Println("Commands: ", ci.Spec.Repo.Jobs[1].Commands[0])
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -79,9 +78,6 @@ func CreatePod(ci civ1.CI) {
 	}
 
 	podId := GenerateRandomString(5)
-	for i := 0; i < len(ci.Spec.Repo.Jobs); i++ {
-		fmt.Println(ci.Spec.Repo.Jobs[i].Image)
-	}
 
 	var containers []v1.Container //nolint:prealloc
 	for _, pod := range ci.Spec.Repo.Jobs {
@@ -110,6 +106,9 @@ func CreatePod(ci civ1.CI) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ci.ObjectMeta.Name + "-job-" + podId,
 			Namespace: "knci-system",
+			Labels: map[string]string{
+				"ci.knci.io/name": ci.ObjectMeta.Name,
+			},
 		},
 		Spec: v1.PodSpec{
 			Volumes: []v1.Volume{
@@ -151,4 +150,5 @@ func CreatePod(ci civ1.CI) {
 	if err != nil {
 		panic(err)
 	}
+
 }

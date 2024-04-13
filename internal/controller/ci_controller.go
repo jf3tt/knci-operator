@@ -18,9 +18,10 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	civ1 "knci/api/v1"
 
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,27 +47,85 @@ type CIReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.17.2/pkg/reconcile
-func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
 
+func removeString(slice []string, s string) []string {
+	newSlice := []string{}
+	for _, item := range slice {
+		if item != s {
+			newSlice = append(newSlice, item)
+		}
+	}
+	return newSlice
+}
+
+func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
 	var ci civ1.CI
-
-	if err := r.Get(ctx, req.NamespacedName, &ci); err != nil {
+	err := r.Get(ctx, req.NamespacedName, &ci)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("CI resource not found. Ignoring since object must be deleted", "name", req.NamespacedName.Name, "namespace", req.NamespacedName.Namespace)
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "unable to fetch CI")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, err
 	}
 
-	fmt.Println("CI name: ", ci.ObjectMeta.Name)
-	fmt.Println("Repo URL: ", ci.Spec.Repo.URL)
-	fmt.Println("Repo Access Token: ", ci.Spec.Repo.AccessToken)
-	fmt.Println("Scrape Interval: ", ci.Spec.Repo.ScrapeInterval)
-	// fmt.Println("Commands: ", ci.Spec.Repo.Jobs)
+	if !ci.ObjectMeta.DeletionTimestamp.IsZero() {
+		log.Info("Deleting CI", "CI Name", ci.ObjectMeta.Name)
 
-	CreatePod(ci)
+		podList := &v1.PodList{}
+
+		listOpts := []client.ListOption{
+			client.InNamespace("knci-system"),
+			client.MatchingLabels(map[string]string{
+				"ci.knci.io/name": ci.ObjectMeta.Name,
+			}),
+		}
+
+		if err := r.List(ctx, podList, listOpts...); err != nil {
+			return ctrl.Result{}, nil
+		}
+
+		for _, pod := range podList.Items {
+			if err := r.Delete(ctx, &pod); err != nil {
+				log.Info("Deleting error")
+			}
+		}
+
+		ci.ObjectMeta.Finalizers = removeString(ci.ObjectMeta.Finalizers, "ci.knci.io/finalizer")
+		if err := r.Update(ctx, &ci); err != nil {
+			return ctrl.Result{}, err
+		}
+
+	} else {
+		log.Info("Processing CI", "CI Name", ci.ObjectMeta.Name, "Repo URL", ci.Spec.Repo.URL, "Scrape Interval", ci.Spec.Repo.ScrapeInterval)
+
+		CreatePod(ci)
+	}
 
 	return ctrl.Result{}, nil
+}
+
+// deleteAssociatedPods удаляет все поды, связанные с данной CI
+func (r *CIReconciler) deleteAssociatedPods(ctx context.Context, ci *civ1.CI) error {
+	podList := &v1.PodList{}
+	listOpts := []client.ListOption{
+		client.InNamespace("knci-system"),
+		client.MatchingLabels(map[string]string{"app": "knci"}),
+	}
+	if err := r.List(ctx, podList, listOpts...); err != nil {
+		return err
+	}
+
+	for _, pod := range podList.Items {
+		if err := r.Delete(ctx, &pod); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
