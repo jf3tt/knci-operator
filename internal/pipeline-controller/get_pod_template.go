@@ -1,28 +1,23 @@
-package controller
+package pipelineController
 
 import (
-	"context"
 	civ1 "knci/api/v1"
-	kauth "knci/internal/utils"
 	"math/rand"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func boolPtr(b bool) *bool {
+func getBoolPtr(b bool) *bool {
 	return &b
 }
 
-func hostPathTypePtr(t v1.HostPathType) *v1.HostPathType {
+func getHostPathTypePtr(t v1.HostPathType) *v1.HostPathType {
 	return &t
 }
 
-func GenerateRandomString(length int) string {
+func generateId(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -34,29 +29,9 @@ func GenerateRandomString(length int) string {
 	return string(b)
 }
 
-// +kubebuilder:rbac:groups=core,resources=pods,verbs=create;list;watch;delete
-
-func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
-	log := log.FromContext(ctx)
-	log.Info("Detected CI Job")
-
-	var config *rest.Config
-	var err error
-
-	config, err = kauth.GetKubeConfig()
-	if err != nil {
-		log.Info("Error getting kubernetes configuration:", err)
-	}
-
+func getPodTemplate(ci civ1.CI) v1.Pod {
 	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	podId := GenerateRandomString(5)
-
+	podId := generateId(5)
 	var containers []v1.Container //nolint:prealloc
 	for _, pod := range ci.Spec.Repo.Jobs {
 		container := v1.Container{
@@ -74,7 +49,7 @@ func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
 				},
 			},
 			SecurityContext: &v1.SecurityContext{
-				Privileged: boolPtr(true),
+				Privileged: getBoolPtr(true),
 			},
 			Env: []v1.EnvVar{
 				{
@@ -85,14 +60,14 @@ func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
 		}
 		containers = append(containers, container)
 	}
-	var pods v1.Pod
+	// var pods v1.Pod
 
 	podTemplate := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ci.ObjectMeta.Name + "-" + podId,
+			Name:      "pk-" + ci.ObjectMeta.Name + "-" + podId,
 			Namespace: "knci-system",
 			Labels: map[string]string{
-				"ci.knci.io/name": ci.ObjectMeta.Name,
+				"ci.knci.io/name": "ci.ObjectMeta.Name",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -108,7 +83,7 @@ func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
 					VolumeSource: v1.VolumeSource{
 						HostPath: &v1.HostPathVolumeSource{
 							Path: "/run/k3s/containerd/containerd.sock",
-							Type: hostPathTypePtr(v1.HostPathSocket),
+							Type: getHostPathTypePtr(v1.HostPathSocket),
 						},
 					},
 				},
@@ -130,11 +105,5 @@ func CreatePod(ci civ1.CI, ctx context.Context) v1.Pod {
 			RestartPolicy: v1.RestartPolicyNever,
 		},
 	}
-
-	_, err = clientset.CoreV1().Pods("knci-system").Create(context.Background(), podTemplate, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
-	log.Info("Creating Completed")
-	return pods
+	return *podTemplate
 }

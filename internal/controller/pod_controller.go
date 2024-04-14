@@ -8,8 +8,15 @@ import (
 )
 
 func CreateNewPipeline(ci *civ1.CI, pod v1.Pod) civ1.Pipeline {
-	fmt.Println(ci.ObjectMeta.Name)
-	GetPodTemplate(*ci)
+	// fmt.Println(ci.ObjectMeta.Name)
+
+	podTemplate := GetPodTemplate(*ci)
+
 	var pipeline civ1.Pipeline
+
+	pipeline.Pods = podTemplate
+	// pipeline.CreatePipeline(podTemplate)
+	fmt.Println(pipeline.Name)
+
 	return pipeline
 }

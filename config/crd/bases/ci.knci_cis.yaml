@@ -37,7 +37,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: CISpec defines the desired state of CI
             properties:
               repo:
                 description: Foo is an example field of CI. Edit ci_types.go to remove/update

@@ -30,7 +30,7 @@ func GenerateId(length int) string {
 }
 
 func GetPodTemplate(ci civ1.CI) v1.Pod {
-	gitCloneCommand := "git clone " + "---BLANK---" + " /repo && tree /repo"
+	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
 	podId := GenerateId(5)
 	var containers []v1.Container //nolint:prealloc
 	for _, pod := range ci.Spec.Repo.Jobs {
