@@ -26,7 +26,6 @@ jobs:
 
     - name: Get branch name
       run: echo ${{ github.ref_name }} | sed 's|feature/||'
-      
 
     - name: Set branch name
       run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
@@ -37,7 +36,6 @@ jobs:
 
     - name: Set branch name
       run: echo "GITHUB_BRANCH=$(echo ${{ github.ref_name }} | sed 's|feature/||')" >> $GITHUB_ENV
-
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
