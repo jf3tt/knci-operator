@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main 
-      - 'feature/**'
+  pull_request:
+    branches:
+      - 'feature/*'
 
 jobs:
 
@@ -13,8 +15,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      extract_branch: ${{ steps.extract_branch.outputs.branch }}
 
     steps:
 
@@ -22,7 +22,8 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set branch name
-      run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+      run: echo "SHORT_BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's|^feature/||')" >> $GITHUB_ENV
+
 
 
     - name: Set up QEMU
