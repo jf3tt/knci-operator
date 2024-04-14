@@ -21,6 +21,8 @@ import (
 	"flag"
 	"os"
 
+	log "github.com/sirupsen/logrus"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -57,6 +59,11 @@ func main() {
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
+
+	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&log.JSONFormatter{
+		DisableTimestamp: true,
+	})
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")

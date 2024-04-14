@@ -22,6 +22,7 @@ import (
 
 	pk "knci/internal/pipeline-controller"
 
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -67,19 +68,16 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 		CheckForDeleting(ci, ctx, r)
 		return ctrl.Result{}, err
 	}
-	// CreateNewPipeline(&ci, podTemplate)
-	// // creating pods
-	// CreatePod(ci, ctx)
 
 	// create new pipeline by pod controller
 	pk.CreatePipeline(&ci)
 
 	// // watching completed pods
-	// var pod v1.Pod
+	var pod v1.Pod
 
-	// if pod.Status.Phase == v1.PodSucceeded {
-	// 	log.Info("Completed Pod", pod)
-	// }
+	if pod.Status.Phase == v1.PodRunning {
+		log.Info("Running Pod", pod)
+	}
 
 	return ctrl.Result{}, nil
 }

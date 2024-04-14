@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main 
+      - 'feature/**'
 
 jobs:
 
@@ -12,10 +13,17 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      extract_branch: ${{ steps.extract_branch.outputs.branch }}
 
     steps:
+
     - name: Check Out Repo
       uses: actions/checkout@v2
+
+    - name: Set branch name
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
@@ -36,4 +44,4 @@ jobs:
         file: ./Dockerfile
         platforms: linux/arm64
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
+        tags: ghcr.io/${{ github.repository }}:${{ env.BRANCH_NAME }}

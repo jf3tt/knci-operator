@@ -5,8 +5,8 @@ import (
 	"fmt"
 	civ1 "knci/api/v1"
 	kauth "knci/internal/utils"
-	"log"
 
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -14,8 +14,14 @@ import (
 )
 
 type Pipeline struct {
-	Name string
-	CI   civ1.CI
+	Name   string
+	CI     civ1.CI
+	Status string
+}
+
+type Log struct {
+	Owner   string
+	Message string
 }
 
 func CreatePipeline(ci *civ1.CI) Pipeline {
@@ -27,7 +33,7 @@ func CreatePipeline(ci *civ1.CI) Pipeline {
 }
 
 // func (ci civ1.CI) Finalizer() {
-// 	CheckForDeleting()
+// 	CheckForDeleting(ci, ctx, r)
 // }
 
 func (p Pipeline) CreateJob(ci *civ1.CI) v1.Pod {
@@ -52,6 +58,6 @@ func (p Pipeline) CreateJob(ci *civ1.CI) v1.Pod {
 	if err != nil {
 		log.Fatalf("Error creating pod: %s", err.Error())
 	}
-
+	log.Debug("Pod created: ", pod.ObjectMeta.Name)
 	return *pod
 }
