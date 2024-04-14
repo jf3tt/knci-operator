@@ -18,8 +18,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      extract_branch: ${{ steps.extract_branch.outputs.branch }}
 
     steps:
 
