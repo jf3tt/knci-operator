@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	civ1 "knci/api/v1"
 
 	v1 "k8s.io/api/core/v1"
@@ -60,17 +61,16 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 		log.Error(err, "unable to fetch CI")
 		return ctrl.Result{}, err
 	}
-
+	podTemplate := GetPodTemplate(ci)
 	// checking for cleaning
 	if !ci.ObjectMeta.DeletionTimestamp.IsZero() {
 		CheckForDeleting(ci, ctx, r)
 		return ctrl.Result{}, err
 	}
-
+	pipeline := CreateNewPipeline(&ci, podTemplate)
+	fmt.Println(pipeline)
 	// creating pods
-	log.Info("Detected CI Job")
 	CreatePod(ci, ctx)
-	log.Info("Creating Completed")
 
 	// watching completed pods
 	var pod v1.Pod
