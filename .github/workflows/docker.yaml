@@ -51,4 +51,4 @@ jobs:
         file: ./Dockerfile
         platforms: linux/arm64
         push: true
-        tags: ghcr.io/${{ github.repository }}:$GITHUB_BRANCH
+        tags: ghcr.io/${{ github.repository }}:${{ env.GITHUB_BRANCH }}
