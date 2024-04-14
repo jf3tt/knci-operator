@@ -23,8 +23,9 @@ jobs:
 
     - name: Check Out Repo
       uses: actions/checkout@v2
+
     - name: Get branch name
-      run: echo ${{ github.ref_name }} 
+      run: echo ${{ github.ref_name }} sed 's|feature-||'
       
 
     - name: Set branch name
