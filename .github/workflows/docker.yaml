@@ -18,11 +18,17 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      extract_branch: ${{ steps.extract_branch.outputs.branch }}
 
     steps:
 
     - name: Check Out Repo
       uses: actions/checkout@v2
+
+    - name: Set branch name
+      run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
 
     - name: Get branch name
       run: echo ${{ github.ref_name }} | sed 's|feature/||'
