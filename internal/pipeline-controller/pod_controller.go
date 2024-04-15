@@ -17,11 +17,7 @@ type Pipeline struct {
 	Name   string
 	CI     civ1.CI
 	Status string
-}
-
-type Log struct {
-	Owner   string
-	Message string
+	Pods   []v1.Pod
 }
 
 func CreatePipeline(ctx context.Context, ci *civ1.CI) Pipeline {
@@ -54,8 +50,10 @@ func kubernetesAuth() *kubernetes.Clientset {
 
 func (p Pipeline) CreateJob(ctx context.Context, ci *civ1.CI) v1.Pod {
 	var podSpec v1.Pod
+	// var podSet []v1.Pod
 
 	var err error
+
 	clientset := kubernetesAuth()
 
 	podSpec = getPodTemplate(*ci)
@@ -64,6 +62,8 @@ func (p Pipeline) CreateJob(ctx context.Context, ci *civ1.CI) v1.Pod {
 	if err != nil {
 		log.Error("Error creating pod: ", err)
 	}
-	log.Debug("Pod created: ", pod.ObjectMeta.Name)
+	// // watching completed pods
+	checkPodStatus(*pod)
+
 	return *pod
 }
