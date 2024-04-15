@@ -24,10 +24,10 @@ type Log struct {
 	Message string
 }
 
-func CreatePipeline(ci *civ1.CI) Pipeline {
+func CreatePipeline(ctx context.Context, ci *civ1.CI) Pipeline {
 	var pipeline Pipeline
 
-	pipeline.CreateJob(ci)
+	pipeline.CreateJob(ctx, ci)
 
 	return pipeline
 }
@@ -52,7 +52,7 @@ func kubernetesAuth() *kubernetes.Clientset {
 	return clientset
 }
 
-func (p Pipeline) CreateJob(ci *civ1.CI) v1.Pod {
+func (p Pipeline) CreateJob(ctx context.Context, ci *civ1.CI) v1.Pod {
 	var podSpec v1.Pod
 
 	var err error
@@ -60,9 +60,9 @@ func (p Pipeline) CreateJob(ci *civ1.CI) v1.Pod {
 
 	podSpec = getPodTemplate(*ci)
 
-	pod, err := clientset.CoreV1().Pods("knci-system").Create(context.TODO(), &podSpec, metav1.CreateOptions{})
+	pod, err := clientset.CoreV1().Pods("knci-system").Create(ctx, &podSpec, metav1.CreateOptions{})
 	if err != nil {
-		log.Fatalf("Error creating pod: %s", err.Error())
+		log.Error("Error creating pod: ", err)
 	}
 	log.Debug("Pod created: ", pod.ObjectMeta.Name)
 	return *pod

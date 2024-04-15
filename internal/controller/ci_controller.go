@@ -70,7 +70,7 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 	}
 
 	// create new pipeline by pod controller
-	pk.CreatePipeline(&ci)
+	pk.CreatePipeline(ctx, &ci)
 
 	// // watching completed pods
 	var pod v1.Pod
