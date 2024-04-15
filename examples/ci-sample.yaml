@@ -1,0 +1,15 @@
+kind: CI
+apiVersion: ci.knci/v1
+metadata:
+  name: ci-sample-lint
+  finalizers:
+  - ci.knci.io/finalizer
+spec:
+  repo: 
+    url: "https://github.com/knci-operator/knci-operator.git"
+    scrapeInterval: 1
+    jobs:
+      - name: golangci-lint
+        stage: lint
+        image: golangci/golangci-lint:latest
+        commands: ["/bin/sh", "-c", "cd /repo && /usr/bin/golangci-lint run -v"]
