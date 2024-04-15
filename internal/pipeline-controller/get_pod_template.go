@@ -1,4 +1,4 @@
-package controller
+package pipelineController
 
 import (
 	civ1 "knci/api/v1"
@@ -13,11 +13,11 @@ func getBoolPtr(b bool) *bool {
 	return &b
 }
 
-func GetHostPathTypePtr(t v1.HostPathType) *v1.HostPathType {
+func getHostPathTypePtr(t v1.HostPathType) *v1.HostPathType {
 	return &t
 }
 
-func GenerateId(length int) string {
+func generateId(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -29,9 +29,9 @@ func GenerateId(length int) string {
 	return string(b)
 }
 
-func GetPodTemplate(ci civ1.CI) v1.Pod {
-	gitCloneCommand := "git clone " + "---BLANK---" + " /repo && tree /repo"
-	podId := GenerateId(5)
+func getPodTemplate(ci civ1.CI) v1.Pod {
+	gitCloneCommand := "git clone " + ci.Spec.Repo.URL + " /repo && tree /repo"
+	podId := generateId(5)
 	var containers []v1.Container //nolint:prealloc
 	for _, pod := range ci.Spec.Repo.Jobs {
 		container := v1.Container{
@@ -64,10 +64,10 @@ func GetPodTemplate(ci civ1.CI) v1.Pod {
 
 	podTemplate := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ci.ObjectMeta.Name" + podId,
+			Name:      "pk-" + ci.ObjectMeta.Name + "-" + podId,
 			Namespace: "knci-system",
 			Labels: map[string]string{
-				"ci.knci.io/name": "ci.ObjectMeta.Name",
+				"ci.knci.io/name": ci.ObjectMeta.Name,
 			},
 		},
 		Spec: v1.PodSpec{
@@ -83,7 +83,7 @@ func GetPodTemplate(ci civ1.CI) v1.Pod {
 					VolumeSource: v1.VolumeSource{
 						HostPath: &v1.HostPathVolumeSource{
 							Path: "/run/k3s/containerd/containerd.sock",
-							Type: GetHostPathTypePtr(v1.HostPathSocket),
+							Type: getHostPathTypePtr(v1.HostPathSocket),
 						},
 					},
 				},

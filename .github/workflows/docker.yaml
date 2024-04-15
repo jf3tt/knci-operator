@@ -10,8 +10,6 @@ on:
       - 'feature/*'
     types:
       - opened
-    tags:        
-      - v*
 
 jobs:
 

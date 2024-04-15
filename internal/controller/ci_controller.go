@@ -18,10 +18,10 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	civ1 "knci/api/v1"
 
-	v1 "k8s.io/api/core/v1"
+	pk "knci/internal/pipeline-controller"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -61,23 +61,15 @@ func (r *CIReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Re
 		log.Error(err, "unable to fetch CI")
 		return ctrl.Result{}, err
 	}
-	podTemplate := GetPodTemplate(ci)
 	// checking for cleaning
 	if !ci.ObjectMeta.DeletionTimestamp.IsZero() {
+		// pk.CheckForDeleting(ci, ctx, *r)
 		CheckForDeleting(ci, ctx, r)
 		return ctrl.Result{}, err
 	}
-	pipeline := CreateNewPipeline(&ci, podTemplate)
-	fmt.Println(pipeline)
-	// creating pods
-	CreatePod(ci, ctx)
 
-	// watching completed pods
-	var pod v1.Pod
-
-	if pod.Status.Phase == v1.PodSucceeded {
-		log.Info("Completed Pod", pod)
-	}
+	// create new pipeline by pod controller
+	pk.CreatePipeline(ctx, &ci)
 
 	return ctrl.Result{}, nil
 }

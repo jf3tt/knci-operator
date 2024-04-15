@@ -38,7 +38,7 @@ var _ = Describe("CI Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "knci-system", // TODO(user):Modify as needed
 		}
 		ci := &civ1.CI{}
 
@@ -49,7 +49,7 @@ var _ = Describe("CI Controller", func() {
 				resource := &civ1.CI{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
-						Namespace: "default",
+						Namespace: "knci-system",
 					},
 					// TODO(user): Specify other spec details if needed.
 				}

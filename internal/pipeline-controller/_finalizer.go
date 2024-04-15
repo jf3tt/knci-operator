@@ -1,13 +1,19 @@
-package controller
+package pipelineController
 
 import (
 	"context"
 	civ1 "knci/api/v1"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+type CIReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
 
 func removeString(slice []string, s string) []string {
 	newSlice := []string{}
@@ -41,10 +47,7 @@ func CheckForDeleting(ci civ1.CI, ctx context.Context, r *CIReconciler) {
 	// deleting pods produced by ci crd
 	for _, pod := range podList.Items {
 		if err := r.Delete(ctx, &pod); err != nil {
-			log.Info("Failed to delete pod")
-		} else {
-			// Логируем успешное удаление с указанием имени пода
-			log.Info("Pod deleted successfully", "pod name: ", pod.Name)
+			log.Info("Deleting error")
 		}
 	}
 
