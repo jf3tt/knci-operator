@@ -67,7 +67,7 @@ func getPodTemplate(ci civ1.CI) v1.Pod {
 			Name:      "pk-" + ci.ObjectMeta.Name + "-" + podId,
 			Namespace: "knci-system",
 			Labels: map[string]string{
-				"ci.knci.io/name": "ci.ObjectMeta.Name",
+				"ci.knci.io/name": ci.ObjectMeta.Name,
 			},
 		},
 		Spec: v1.PodSpec{

@@ -41,7 +41,11 @@ func CheckForDeleting(ci civ1.CI, ctx context.Context, r *CIReconciler) {
 	// deleting pods produced by ci crd
 	for _, pod := range podList.Items {
 		if err := r.Delete(ctx, &pod); err != nil {
-			log.Info("Deleting error")
+			// Логируем ошибку с указанием имени пода
+			log.Info("Failed to delete pod")
+		} else {
+			// Логируем успешное удаление с указанием имени пода
+			log.Info("Pod deleted successfully")
 		}
 	}
 
