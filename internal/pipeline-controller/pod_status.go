@@ -9,6 +9,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+func checkContainerStatus(pod v1.Pod) {
+	pipelineLogger := log.WithFields(log.Fields{
+		"pod": pod.Name,
+	})
+	podStatus := pod.Status.Conditions
+	for _, condition := range podStatus {
+		if condition.Reason == "PodCompleted" {
+			fmt.Println(condition.Reason)
+			pipelineLogger.Debug("Pod status changed to ", condition.Reason)
+			break
+		}
+	}
+
+	if pod.Status.Phase == "Failed" {
+		for _, condition := range podStatus {
+			pipelineLogger.Debug("Pod failed with error: ", condition.Reason)
+			break
+		}
+	}
+}
+
 func checkPodStatus(pod v1.Pod) {
 
 	clientset := kubernetesAuth()
@@ -19,23 +40,10 @@ func checkPodStatus(pod v1.Pod) {
 		log.Fatalf("Error setting up watch for pod: %s", err.Error())
 	}
 
-	pipelineLogger := log.WithFields(log.Fields{
-		"ci":  "ci.ObjectMeta.Name",
-		"pod": pod.Name,
-	})
-
 	defer watcher.Stop()
 
 	for event := range watcher.ResultChan() {
 		p := event.Object.(*v1.Pod)
-		if p.Status.Phase == "Succeeded" {
-			podStatus := p.Status.Conditions
-			for _, condition := range podStatus {
-				if condition.Reason == "PodCompleted" {
-					pipelineLogger.Debug("Pod status changed to ", condition.Reason)
-					break
-				}
-			}
-		}
+		checkContainerStatus(*p)
 	}
 }
