@@ -36,9 +36,7 @@ func CreatePipeline(ci *civ1.CI) Pipeline {
 // 	CheckForDeleting(ci, ctx, r)
 // }
 
-func (p Pipeline) CreateJob(ci *civ1.CI) v1.Pod {
-	var podSpec v1.Pod
-
+func kubernetesAuth() *kubernetes.Clientset {
 	var config *rest.Config
 	var err error
 
@@ -51,6 +49,14 @@ func (p Pipeline) CreateJob(ci *civ1.CI) v1.Pod {
 	if err != nil {
 		fmt.Println("Error getting kubernetes configuration)")
 	}
+	return clientset
+}
+
+func (p Pipeline) CreateJob(ci *civ1.CI) v1.Pod {
+	var podSpec v1.Pod
+
+	var err error
+	clientset := kubernetesAuth()
 
 	podSpec = getPodTemplate(*ci)
 
